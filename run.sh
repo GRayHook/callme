@@ -1,2 +1,2 @@
 #!/bin/bash
-./run ifconfig
+./run 'echo "типо прога думает..." && sleep 1 && echo "..." && sleep 1 && echo "..." && sleep 1 && echo "..." && sleep 1 && echo "прога додумалась!"'

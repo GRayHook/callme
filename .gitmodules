@@ -1,0 +1,3 @@
+[submodule "libtg"]
+	path = libtg
+	url = git@github.com:GRayHook/libtelegram.git

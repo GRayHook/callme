@@ -1,104 +1,151 @@
 #include "callme.h"
 
-int main(int argc, char const *argv[])
-{
-	if (callme_init_tg() != 0) return 1;
-
-	char *argsv[argc + 2];
-	switch_mode(argc, argv, argsv);
-
-	// pid_t chpid;
-	// int pip[2];
-	// if(pipe(pip) == -1)
-	// {
-	// 	fprintf(stderr, "Error creating pipe\n");
-	// }
-	// if(!(chpid = fork()))
-	// {
-	// 	close(pip[0]);
-	// 	dup2(pip[1],1); // 1 -> stdout
-	// 	execvp(argsv[0], (char*const*) argsv);
-	// }
-	// close(pip[1]);
-	//
-	// char buf[1];
-	// while(read(pip[0], buf, 1) > 0)
-	// {
-	// 	write(1, buf, 1); // 1 -> stdout
-	// }
-	// close(pip[0]);
-	// int status;
-	// waitpid(chpid, &status, WUNTRACED);
-	// tg_message_t answer;
-	// char msg_text[256];
-	// sprintf(msg_text, "Ur command \"");
-	// for (size_t i = 2; i < argc; i++) {
-	// 	sprintf(msg_text, "%s%s ", msg_text, argsv[i]);
-	// }
-	// sprintf(msg_text, "%s%s", msg_text, argsv[argc]);
-	// sprintf(msg_text, "%s\" done!", msg_text);
-	// strcpy(answer.text, msg_text);
-	// answer.chat_id = chat_id;
-	// tg_send_message(&answer);
-	return 0;
-}
-
-int callme_init_tg()
+int main(int argc, char *argv[])
 {
 	json_object *content_json;
+	if (tg_start(&content_json, TG_TOKEN) != 0) return 1;
 
-	tg_start(&content_json, TG_TOKEN);
-	tg_callback_bind((char *)"start", &remember_me);
+	switch_mode(argc, argv);
 
 	return 0;
 }
 
-int switch_mode(int argc, char const *argv[], char *argsv[])
+int switch_mode(int argc, char *argv[])
 {
 	if (argc < 2) exit(0);
 
 	int chat_id;
+	char *argsv[argc + 1];
 
 	switch (argv[1][1]) {
 		case 'n':
-			printf("wait start\n");
+			printf("Send '%s' to CallMeBot\n", getenv("USER"));
+			tg_callback_bind((char *)"start", &remember_me);
+			sleep(200);
 			break;
+
 		case 'e':
-			printf("exec command\n");
+			printf("Execute command\n");
 			if ((chat_id = read_config()) == -1) return 1;
+			exec_argsv(chat_id, argc, argv, argsv);
 			break;
+
 		case 's':
-			printf("do script\n");
+			printf("Do script\n");
 			if ((chat_id = read_config()) == -1) return 1;
+			script_argsv(chat_id, argc, argv, argsv);
 			break;
+
 		default:
 			printf("gimme command -n / -e / -s\n");
 	}
-	exit(0);
-	// argsv[0] = "/bin/sh";
-	// argsv[1] = "-c";
-	// for (size_t i = 1; i < argc; i++) {
-	// 	argsv[i+1] = argv[i];
-	// }
-	// argsv[argc + 1] = 0;
+
+	do_exec(chat_id, argc, argsv);
+
+	return 0;
+}
+
+int script_argsv(int chat_id, int argc, char *argv[], char *argsv[])
+{
+	argsv[0] = "/bin/sh";
+	argsv[1] = "-c";
+
+	argsv[2] = argv[2];
+
+	argsv[argc] = 0;
+
+	return 0;
+}
+
+int exec_argsv(int chat_id, int argc, char *argv[], char *argsv[])
+{
+	for (size_t i = 2; i < argc; i++) argsv[i - 2] = argv[i];
+
+	argsv[argc - 2] = 0;
+
+	return 0;
+}
+
+int do_exec(int chat_id, int argc, char *argsv[])
+{
+	pid_t chpid;
+	int pip[2];
+
+	if(pipe(pip) == -1)
+	{
+		fprintf(stderr, "Error creating pipe\n");
+	}
+
+	if(!(chpid = fork()))
+	{
+		close(pip[0]);
+		dup2(pip[1],1); // 1 -> stdout
+		fprintf(stdout, "You will recieve notify...\n"); // 1 -> stdout
+		execvp(argsv[0], (char*const*) argsv);
+	}
+	close(pip[1]);
+
+	char buf[1];
+	while(read(pip[0], buf, 1) > 0)
+	{
+		write(1, buf, 1); // 1 -> stdout
+	}
+
+	close(pip[0]);
+
+	waitpid(chpid, NULL, WUNTRACED);
+
+	tg_message_t answer;
+	strcpy(answer.text, "Ur command '");
+
+	int i = 0;
+	while(argsv[i] != 0)
+	{
+		strcpy(answer.text + strlen(answer.text), argsv[i++]);
+		strcpy(answer.text + strlen(answer.text), " ");
+	}
+
+	strcpy(answer.text + strlen(answer.text) - 1, "' done!");
+
+	answer.chat_id = chat_id;
+	tg_send_message(&answer);
+	return 0;
 }
 
 int remember_me(tg_message_t *msg)
 {
 	tg_message_t answer;
-	if (tg_get_command_arg(msg->text, answer.text))
-		strcpy(answer.text, "U will recv msg when your command done");
 	answer.chat_id = msg->chat_id;
+
+	char username[64];
+	if (tg_get_command_arg(msg->text, username))
+	{
+		sprintf(answer.text, "%s%s",
+		        "Send me your username (/start 'username')",
+		        " and start ./callme -n");
+		tg_send_message(&answer);
+		return 0;
+	}
+
+	if (strcmp(username, getenv("USER")))
+	{
+		strcpy(answer.text, "Username invalid");
+		tg_send_message(&answer);
+		return 0;
+	}
+
+	strcpy(answer.text, "I remember you");
 	tg_send_message(&answer);
 
-	printf("%s:%d start recv\n", getenv("USER"), msg->chat_id);
+	printf("%s:%d start recv\n", username, msg->chat_id);
+
 	char pathname[256];
 	sprintf(pathname, "%s/.callme", getenv("HOME"));
 	FILE *fd;
 	if ((fd = fopen(pathname, "w")) == NULL)
 	{
 		printf("Cannot access config\n");
-		return 0;
+		exit(1);
 	}
 	fprintf(fd, "%d\n", msg->chat_id);
 	fclose(fd);

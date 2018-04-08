@@ -4,7 +4,8 @@ CallMe
 About
 -----
 
-This utility can send notify to telegram chat when command is done.
+  This utility can send notify to telegram chat when command is done.
+  My bot is @CommandNotifyBot
 
 Features
 --------

@@ -14,7 +14,6 @@ int switch_mode(int argc, char *argv[])
 {
 	if (argc < 2) exit(0);
 
-	int chat_id;
 	char *argsv[argc + 1];
 
 	switch (argv[1][1]) {
@@ -26,26 +25,24 @@ int switch_mode(int argc, char *argv[])
 
 		case 'e':
 			printf("Execute command\n");
-			if ((chat_id = read_config()) == -1) return 1;
-			exec_argsv(chat_id, argc, argv, argsv);
+			exec_argsv(argc, argv, argsv);
 			break;
 
 		case 's':
 			printf("Do script\n");
-			if ((chat_id = read_config()) == -1) return 1;
-			script_argsv(chat_id, argc, argv, argsv);
+			script_argsv(argc, argv, argsv);
 			break;
 
 		default:
 			printf("gimme command -n / -e / -s\n");
 	}
 
-	do_exec(chat_id, argc, argsv);
+	do_exec(argc, argsv);
 
 	return 0;
 }
 
-int script_argsv(int chat_id, int argc, char *argv[], char *argsv[])
+int script_argsv(int argc, char *argv[], char *argsv[])
 {
 	argsv[0] = "/bin/sh";
 	argsv[1] = "-c";
@@ -57,7 +54,7 @@ int script_argsv(int chat_id, int argc, char *argv[], char *argsv[])
 	return 0;
 }
 
-int exec_argsv(int chat_id, int argc, char *argv[], char *argsv[])
+int exec_argsv(int argc, char *argv[], char *argsv[])
 {
 	for (size_t i = 2; i < argc; i++) argsv[i - 2] = argv[i];
 
@@ -66,8 +63,11 @@ int exec_argsv(int chat_id, int argc, char *argv[], char *argsv[])
 	return 0;
 }
 
-int do_exec(int chat_id, int argc, char *argsv[])
+int do_exec(int argc, char *argsv[])
 {
+	int chat_id;
+	if ((chat_id = read_config()) == -1) return 1;
+
 	pid_t chpid;
 	int pip[2];
 

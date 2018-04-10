@@ -7,6 +7,12 @@ About
   This utility can send notify to telegram chat when command is done.
   My bot is @CommandNotifyBot
 
+Requirements:
+-------------
+
++ json-c
++ curl
+
 Features
 --------
 

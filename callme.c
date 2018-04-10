@@ -2,6 +2,12 @@
 
 int main(int argc, char *argv[])
 {
+	if (argc < 2)
+	{
+		print_help();
+		return 1;
+	}
+
 	json_object *content_json;
 	if (tg_start(&content_json, TG_TOKEN) != 0) return 1;
 
@@ -12,11 +18,14 @@ int main(int argc, char *argv[])
 
 int switch_mode(int argc, char *argv[])
 {
-	if (argc < 2) exit(0);
-
 	char *argsv[argc + 1];
 
 	switch (argv[1][1]) {
+		case 'h':
+			print_help();
+			exit(0);
+			break;
+
 		case 'n':
 			printf("Send '%s' to CallMeBot\n", getenv("USER"));
 			tg_callback_bind((char *)"start", &remember_me);
@@ -34,7 +43,9 @@ int switch_mode(int argc, char *argv[])
 			break;
 
 		default:
-			printf("gimme command -n / -e / -s\n");
+			printf("Unknown key '-%c'!\n", argv[1][1]);
+			print_help();
+			exit(0);
 	}
 
 	do_exec(argc, argsv);
@@ -171,4 +182,16 @@ int read_config()
 	fclose(fd);
 
 	return chat_id;
+}
+
+void print_help()
+{
+	printf("Usage: callme [ -n | -e program | -s 'script' ]\n");
+	printf("Keys:\n");
+	printf("\t-n — Make config. You have to send your username\n");
+	printf("\t\tafter start to Telegram-bot @CommandNotifyBot.\n");
+	printf("\t-e — Execute program. All gived args will exec\n");
+	printf("\t\tlike that executing without 'callme -e'.\n");
+	printf("\t-s — Run gived srcipt. It's like run:\n");
+	printf("\t\tcallme -e bash -c 'script'.\n");
 }

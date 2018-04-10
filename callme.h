@@ -11,3 +11,4 @@ int exec_argsv(int argc, char *argv[], char *argsv[]);
 int do_exec(int argc, char *argsv[]);
 int remember_me(tg_message_t *msg);
 int read_config();
+void print_help();

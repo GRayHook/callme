@@ -1,5 +1,5 @@
 main: libtgcommon.a
-	gcc -g callme.c -Wall -L. -ltgcommon -lcurl -ljson-c -lpthread -o run
+	gcc -g callme.c -Wall -L. -ltgcommon -lcurl -ljson-c -lpthread -o callme
 
 libtgcommon.a: tgcommon.o
 	ar cr libtgcommon.a tgcommon.o
@@ -11,7 +11,7 @@ run: main
 	./run.sh
 
 install: main
-	sudo cp run /usr/local/bin/callme
+	sudo cp callme /usr/local/bin/callme
 
 clean:
-	rm -f *.o *.a *.gch run
+	rm -f *.o *.a *.gch callme

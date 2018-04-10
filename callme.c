@@ -27,7 +27,7 @@ int switch_mode(int argc, char *argv[])
 			break;
 
 		case 'n':
-			printf("Send '%s' to CallMeBot\n", getenv("USER"));
+			printf("Send '/start %s' to @CommandNotifyBot\n", getenv("USER"));
 			tg_callback_bind((char *)"start", &remember_me);
 			sleep(200);
 			break;

@@ -5,7 +5,10 @@ About
 -----
 
   This utility can send notify to telegram chat when command is done.
-  My bot is @CommandNotifyBot
+
+  My bot is @CommandNotifyBot.
+
+  Static bin ftp://ftp@80.89.204.123:22231/distr/linux/grayhook/callme
 
 Requirements:
 -------------

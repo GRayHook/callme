@@ -7,17 +7,10 @@ int main(int argc, char *argv[])
 		print_help();
 		return 1;
 	}
-
+	
 	json_object *content_json;
 	if (tg_start(&content_json, TG_TOKEN) != 0) return 1;
 
-	switch_mode(argc, argv);
-
-	return 0;
-}
-
-int switch_mode(int argc, char *argv[])
-{
 	char *argsv[argc + 1];
 
 	switch (argv[1][1]) {
@@ -30,6 +23,7 @@ int switch_mode(int argc, char *argv[])
 			printf("Send '/start %s' to @CommandNotifyBot\n", getenv("USER"));
 			tg_callback_bind((char *)"start", &remember_me);
 			sleep(200);
+			printf("Timed out\n");
 			break;
 
 		case 'e':

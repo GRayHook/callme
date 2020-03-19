@@ -8,8 +8,6 @@ About
 
   My bot is @CommandNotifyBot.
 
-  Static bin ftp://ftp@80.89.204.123:22231/distr/linux/grayhook/callme
-
 Requirements:
 -------------
 

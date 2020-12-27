@@ -20,13 +20,13 @@ int main(int argc, char *argv[])
 	int shift = 1;
 	while (shift < argc)
 	{
+		if (NULL != do_cmd)
+			break;
 		if ('-' != argv[shift][0])
 		{
 			print_help();
 			exit(1);
 		}
-		if (NULL != do_cmd)
-			break;
 
 		switch (argv[shift][1])
 		{

@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "libtg/tgcommon.h"
 
-#define TG_TOKEN "522362584:AAEX0oDV-rBHB5BgObcfkICT4ei5BCR6jGA"
+#define TG_TOKEN "YOUR TOKEN HERE"
 
 int script_argsv(int argc, char *argv[], char *argsv[]);
 int exec_argsv(int argc, char *argv[], char *argsv[]);

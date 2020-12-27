@@ -117,6 +117,7 @@ int do_exec(int argc, char *argsv[], char * text_msg)
 	int chat_id;
 	if ((chat_id = read_config()) == -1) return 1;
 
+	int status = 0;
 	if (0 < argc)
 	{
 		pid_t chpid;
@@ -144,7 +145,10 @@ int do_exec(int argc, char *argsv[], char * text_msg)
 
 		close(pip[0]);
 
-		waitpid(chpid, NULL, WUNTRACED);
+		do
+		{
+			waitpid(chpid, &status, WUNTRACED);
+		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 	}
 
 	tg_message_t answer;
@@ -161,7 +165,11 @@ int do_exec(int argc, char *argsv[], char * text_msg)
 			strcpy(answer.text + strlen(answer.text), " ");
 		}
 
-		strcpy(answer.text + strlen(answer.text) - 1, "' done!");
+		strcpy(answer.text + strlen(answer.text) - 1, "' done!\n");
+		strcpy(answer.text + strlen(answer.text), "Exit code is ");
+		char exit_code[4] = "";
+		sprintf(exit_code, "%d", WEXITSTATUS(status));
+		strcpy(answer.text + strlen(answer.text), exit_code);
 	}
 
 	answer.chat_id = chat_id;

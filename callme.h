@@ -3,7 +3,13 @@
 #include <unistd.h>
 #include "libtg/tgcommon.h"
 
-#define TG_TOKEN "YOUR TOKEN HERE"
+#ifndef TG_TOKEN
+#error "TG_TOKEN is not defined. Pass it at compile time, e.g. make TG_TOKEN=..."
+#endif
+
+#ifndef TG_PROXY
+#define TG_PROXY ""
+#endif
 
 int script_argsv(int argc, char *argv[], char *argsv[]);
 int exec_argsv(int argc, char *argv[], char *argsv[]);

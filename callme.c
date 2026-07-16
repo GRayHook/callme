@@ -9,6 +9,16 @@ int main(int argc, char *argv[])
 	}
 
 	json_object *content_json;
+	if (*TG_PROXY != '\0')
+	{
+		/* tg_set_proxy() in libtg copies into a fixed 64-byte buffer */
+		if (strlen(TG_PROXY) >= 64)
+		{
+			fprintf(stderr, "TG_PROXY too long (max 63 chars): %zu\n", strlen(TG_PROXY));
+			return 1;
+		}
+		tg_set_proxy(TG_PROXY);
+	}
 	if (tg_start(&content_json, TG_TOKEN) != 0) return 1;
 
 	char *argsv[argc + 1];

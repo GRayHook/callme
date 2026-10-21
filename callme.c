@@ -163,23 +163,25 @@ int do_exec(int argc, char *argsv[], char * text_msg)
 
 	tg_message_t answer;
 	if (NULL != text_msg)
-		strcpy(answer.text, text_msg);
+		snprintf(answer.text, sizeof(answer.text), "%s", text_msg);
 	else
 	{
-		strcpy(answer.text, "Ur command '");
-
+		char cmd[900];
+		size_t off = 0;
 		int i = 0;
-		while(argsv[i] != 0)
+		while (argsv[i] != 0 && off < sizeof(cmd) - 1)
 		{
-			strcpy(answer.text + strlen(answer.text), argsv[i++]);
-			strcpy(answer.text + strlen(answer.text), " ");
+			int n = snprintf(cmd + off, sizeof(cmd) - off, "%s ", argsv[i++]);
+			if (n < 0 || (size_t)n >= sizeof(cmd) - off) break;
+			off += n;
 		}
+		if (off) cmd[off - 1] = '\0'; // drop trailing space
+		else cmd[0] = '\0';
 
-		strcpy(answer.text + strlen(answer.text) - 1, "' done!\n");
-		strcpy(answer.text + strlen(answer.text), "Exit code is ");
-		char exit_code[4] = "";
-		sprintf(exit_code, "%d", WEXITSTATUS(status));
-		strcpy(answer.text + strlen(answer.text), exit_code);
+		char exit_code[8] = "";
+		snprintf(exit_code, sizeof(exit_code), "%d", WEXITSTATUS(status));
+		snprintf(answer.text, sizeof(answer.text),
+		         "Ur command '%s' done!\nExit code is %s", cmd, exit_code);
 	}
 
 	answer.chat_id = chat_id;

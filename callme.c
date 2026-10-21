@@ -147,7 +147,7 @@ int exec_argsv(int argc, char *argv[], char *argsv[])
 
 int do_exec(int argc, char *argsv[], char * text_msg)
 {
-	int chat_id;
+	int64_t chat_id;
 	if ((chat_id = read_config()) == -1) return 1;
 
 	int status = 0;
@@ -224,7 +224,7 @@ int remember_me(tg_message_t *msg)
 	answer.chat_id = msg->chat_id;
 
 	char username[64];
-	if (tg_get_command_arg(msg->text, username))
+	if (tg_get_command_arg(msg->text, username, sizeof(username)))
 	{
 		sprintf(answer.text, "%s%s",
 		        "Send me your username (/start 'username')",
@@ -233,7 +233,8 @@ int remember_me(tg_message_t *msg)
 		return 0;
 	}
 
-	if (strcmp(username, getenv("USER")))
+	const char * user = getenv("USER");
+	if (!user || strcmp(username, user))
 	{
 		strcpy(answer.text, "Username invalid");
 		tg_send_message(&answer);
@@ -243,26 +244,40 @@ int remember_me(tg_message_t *msg)
 	strcpy(answer.text, "I remember you");
 	tg_send_message(&answer);
 
-	printf("%s:%d start recv\n", username, msg->chat_id);
+	printf("%s:%" PRId64 " start recv\n", username, msg->chat_id);
+
+	const char * home = getenv("HOME");
+	if (!home)
+	{
+		printf("HOME is not set\n");
+		finish(1);
+	}
 
 	char pathname[256];
-	sprintf(pathname, "%s/.callme", getenv("HOME"));
+	snprintf(pathname, sizeof(pathname), "%s/.callme", home);
 	FILE *fd;
 	if ((fd = fopen(pathname, "w")) == NULL)
 	{
 		printf("Cannot access config\n");
 		finish(1);
 	}
-	fprintf(fd, "%d\n", msg->chat_id);
+	fprintf(fd, "%" PRId64 "\n", msg->chat_id);
 	fclose(fd);
 
 	finish(0);
 }
 
-int read_config()
+int64_t read_config()
 {
+	const char * home = getenv("HOME");
+	if (!home)
+	{
+		printf("HOME is not set\n");
+		return -1;
+	}
+
 	char pathname[256];
-	sprintf(pathname, "%s/.callme", getenv("HOME"));
+	snprintf(pathname, sizeof(pathname), "%s/.callme", home);
 
 	FILE *fd;
 	if ((fd = fopen(pathname, "r")) == NULL)
@@ -271,8 +286,8 @@ int read_config()
 		return -1;
 	}
 
-	int chat_id = -1;
-	fscanf(fd, "%d\n", &chat_id);
+	int64_t chat_id = -1;
+	fscanf(fd, "%" SCNd64 "\n", &chat_id);
 
 	fclose(fd);
 

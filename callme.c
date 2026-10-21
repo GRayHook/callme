@@ -106,32 +106,38 @@ int main(int argc, char *argv[])
 	finish(0);
 }
 
+/* Index right after the -e/-s key, skipping '-m msg' if present */
+static size_t cmd_start(int argc, char *argv[])
+{
+	for (int i = 1; i < argc; i++)
+	{
+		if (!strcmp(argv[i], "-m")) { i++; continue; }
+		if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "-s"))
+			return (size_t)i + 1;
+	}
+	return (size_t)argc;
+}
+
 int script_argsv(int argc, char *argv[], char *argsv[])
 {
+	size_t start = cmd_start(argc, argv);
+
 	argsv[0] = "/bin/sh";
 	argsv[1] = "-c";
-
-	argsv[2] = argv[2];
-
-	argsv[argc] = 0;
+	argsv[2] = (start < (size_t)argc) ? argv[start] : "";
+	argsv[3] = 0;
 
 	return 0;
 }
 
 int exec_argsv(int argc, char *argv[], char *argsv[])
 {
-	size_t start = 2;
-	size_t i = 0;
+	size_t start = cmd_start(argc, argv);
+	size_t i;
 
-	for (; i < argc; i++)
-	{
-		if (!strcmp(argv[i], "-m"))
-			start = i + 2;
-	}
+	for (i = start; i < (size_t)argc; i++) argsv[i - start] = argv[i];
 
-	for (i = start; i < argc; i++) argsv[i - 2] = argv[i];
-
-	argsv[argc - 2] = 0;
+	argsv[i - start] = 0;
 
 	return 0;
 }

@@ -22,6 +22,11 @@ int main(int argc, char *argv[])
 	}
 
 	json_object *content_json = NULL;
+	if (*TG_TOKEN == '\0' || strlen(TG_TOKEN) >= 64)
+	{
+		fprintf(stderr, "TG_TOKEN is empty or too long (max 63 chars)\n");
+		return 1;
+	}
 	if (*TG_PROXY != '\0')
 	{
 		/* tg_set_proxy() in libtg copies into a fixed 64-byte buffer */
@@ -101,9 +106,7 @@ int main(int argc, char *argv[])
 	else
 		argsc = -1;
 
-	do_exec(argsc, argsv, text_msg);
-
-	finish(0);
+	finish(do_exec(argsc, argsv, text_msg) ? 1 : 0);
 }
 
 /* Index right after the -e/-s key, skipping '-m msg' if present */
@@ -150,35 +153,41 @@ int do_exec(int argc, char *argsv[], char * text_msg)
 	int status = 0;
 	if (0 < argc)
 	{
-		pid_t chpid;
+		pid_t chpid = -1;
 		int pip[2];
-
-		if(pipe(pip) == -1)
+		int pipe_ok = (pipe(pip) != -1);
+		if (!pipe_ok)
 		{
 			fprintf(stderr, "Error creating pipe\n");
 		}
+		else
+			chpid = fork();
 
-		if(!(chpid = fork()))
+		if (chpid == 0)
 		{
 			close(pip[0]);
 			dup2(pip[1],1); // 1 -> stdout
 			fprintf(stdout, "You will recieve notify...\n"); // 1 -> stdout
 			execvp(argsv[0], (char*const*) argsv);
+			exit(127); // execvp returns only on failure
 		}
-		close(pip[1]);
+		if (pipe_ok) close(pip[1]);
 
-		char buf[1];
-		while(read(pip[0], buf, 1) > 0)
+		if (pipe_ok && 0 < chpid)
 		{
-			write(1, buf, 1); // 1 -> stdout
+			char buf[1];
+			while(read(pip[0], buf, 1) > 0)
+			{
+				write(1, buf, 1); // 1 -> stdout
+			}
+
+			close(pip[0]);
+
+			do
+			{
+				waitpid(chpid, &status, WUNTRACED);
+			} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 		}
-
-		close(pip[0]);
-
-		do
-		{
-			waitpid(chpid, &status, WUNTRACED);
-		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 	}
 
 	tg_message_t answer;

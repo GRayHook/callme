@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	json_object *content_json;
+	json_object *content_json = NULL;
 	if (*TG_PROXY != '\0')
 	{
 		/* tg_set_proxy() in libtg copies into a fixed 64-byte buffer */

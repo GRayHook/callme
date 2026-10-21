@@ -1,5 +1,18 @@
 #include "callme.h"
 
+/* The library keeps a detached polling thread inside libcurl/json-c.
+ * exit() would run atexit handlers (OpenSSL/curl/stdio cleanup) while
+ * that thread is still mid-request, freeing state it uses -> rare
+ * use-after-free at process end. Flush buffers and terminate the whole
+ * process at once instead. */
+static void finish(int code) __attribute__((noreturn));
+static void finish(int code)
+{
+	fflush(stdout);
+	fflush(stderr);
+	_exit(code);
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc < 2)
@@ -35,14 +48,14 @@ int main(int argc, char *argv[])
 		if ('-' != argv[shift][0])
 		{
 			print_help();
-			exit(1);
+			finish(1);
 		}
 
 		switch (argv[shift][1])
 		{
 			case 'h':
 				print_help();
-				exit(0);
+				finish(0);
 				break;
 
 			case 'n':
@@ -50,6 +63,7 @@ int main(int argc, char *argv[])
 				tg_callback_bind((char *)"start", &remember_me);
 				sleep(200);
 				printf("Timed out\n");
+				finish(1);
 				break;
 
 			case 'm':
@@ -57,7 +71,7 @@ int main(int argc, char *argv[])
 				if (shift == argc)
 				{
 					print_help();
-					exit(1);
+					finish(1);
 				}
 				printf("I will send message \"%s\"\n", argv[shift]);
 				text_msg = argv[shift];
@@ -75,9 +89,9 @@ int main(int argc, char *argv[])
 				break;
 
 			default:
-				printf("Unknown key '-%c'!\n", argv[1][1]);
+				printf("Unknown key '-%c'!\n", argv[shift][1]);
 				print_help();
-				exit(1);
+				finish(1);
 		}
 		shift++;
 	}
@@ -89,7 +103,7 @@ int main(int argc, char *argv[])
 
 	do_exec(argsc, argsv, text_msg);
 
-	return 0;
+	finish(0);
 }
 
 int script_argsv(int argc, char *argv[], char *argsv[])
@@ -222,12 +236,12 @@ int remember_me(tg_message_t *msg)
 	if ((fd = fopen(pathname, "w")) == NULL)
 	{
 		printf("Cannot access config\n");
-		exit(1);
+		finish(1);
 	}
 	fprintf(fd, "%d\n", msg->chat_id);
 	fclose(fd);
 
-	exit(0);
+	finish(0);
 }
 
 int read_config()
